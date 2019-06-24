@@ -1,0 +1,10 @@
+*
+!*.*
+!*/
+*.c
+*.swo
+*.swp
+*.txt
+*.out
+!openmp/*.c
+!mpi/*.c
