@@ -7,7 +7,7 @@
 #include <math.h>
 
 #define PI 3.1415926
-#define Size 65536//Problem Size
+#define Size 32768//Problem Size
 
 double real_sum[Size], img_sum[Size];
 double table[Size][3];
@@ -42,14 +42,11 @@ void run() {
         e_table[k] = cos_table[k] - (sin_table[k]*I);
     }
 
-    //double complex even[(Size / comm_size / 2)], odd[(Size / comm_size / 2)];
-    //double complex even_leader[ (Size / comm_size / 2) * comm_size], odd_leader[ (Size / comm_size / 2) * comm_size];
     double rev_table[(Size / comm_size)][3];
 
     int send_receive_count = (Size / comm_size) * 3;
     MPI_Scatter(table, send_receive_count, MPI_DOUBLE, rev_table,
             send_receive_count, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-    //printf("%d, %lf, %lf\n", my_rank, rev_table[0][0], rev_table[0][1]);
     for (int k = 0; k < Size / 2; k++) {
         double real_even_leader[comm_size], img_even_leader[comm_size], real_odd_leader[comm_size], img_odd_leader[comm_size];
         double real_even = 0.0, img_even = 0.0, real_odd = 0.0, img_odd = 0.0;
@@ -57,9 +54,7 @@ void run() {
             int idx = (int)rev_table[i][0];
             int tmp = (idx * k ) % Size;
             double complex val1 = (rev_table[i][1] + rev_table[i][2] * I);
-            //printf("k:%d, rank: %d, input: %lf + %lfj\n", k, my_rank, creal(val1), cimag(val1));
             val1 *= e_table[tmp];
-            //printf("k:%d, rank: %d, res: %lf + %lfj\n", k, my_rank, creal(val1), cimag(val1));
             if (idx & 1) {
                 real_odd += creal(val1);
                 img_odd += cimag(val1);
@@ -69,7 +64,6 @@ void run() {
                 img_even += cimag(val1);
             }
         }
-        //printf("k:%d, rank: %d, %lf, %lf\n", k, my_rank, real_even, real_odd);
         MPI_Gather(&real_even, 1, MPI_DOUBLE, real_even_leader, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         MPI_Gather(&real_odd, 1, MPI_DOUBLE, real_odd_leader, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
         MPI_Gather(&img_even, 1, MPI_DOUBLE, img_even_leader, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -78,7 +72,6 @@ void run() {
         if(my_rank == 0) {
             double real_even_sum = 0.0, img_even_sum = 0.0, real_odd_sum = 0.0, img_odd_sum = 0.0;
             for(int i = 0; i < comm_size; i++) {
-                //printf("k: %d, rank: root, %lf, %lf\n", k, real_even_leader[i], real_odd_leader[i]);
                 real_even_sum += real_even_leader[i];
                 real_odd_sum += real_odd_leader[i];
                 img_even_sum += img_even_leader[i];
