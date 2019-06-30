@@ -4,10 +4,10 @@
 #include <stdio.h>
 #include <complex.h>
 #include <math.h>
-#include <omp.h>
+#include <time.h>
 
 #define PI 3.1415926
-#define Size 32768//Problem Size
+#define Size 4//Problem Size
 
 double real_sum[Size], img_sum[Size];
 double sin_table[Size], cos_table[Size];
@@ -24,7 +24,7 @@ void run() {
         fscanf(fin, "%lf%lf", &table[i][1], &table[i][2]);
     }
     fclose(fin);
-    double start = omp_get_wtime();
+    clock_t start = clock();
     for (int k = 0; k < Size; k++) {
         //compute sin, cos table
         double tmp = 2*PI * k / Size;
@@ -32,10 +32,8 @@ void run() {
         cos_table[k] = cos(tmp);
         e_table[k] = cos_table[k] - (sin_table[k]*I);
     }
-#pragma omp parallel for 
     for (int k = 0; k < Size / 2; k++) {
         double real_even = 0.0, img_even = 0.0, real_odd = 0.0, img_odd = 0.0;
-#pragma omp parallel for reduction(+: real_even, img_even, real_odd, img_odd)
         for(int i = 0; i < Size; i++) {
             double complex val1 = (table[i][1] + table[i][2] * I);
             int tmp = (i*k) % Size;
@@ -55,8 +53,8 @@ void run() {
         real_sum[k + Size/2] = real_even - real_odd;
         img_sum[k + Size/2] = img_even - img_odd;
     }
-    double end = omp_get_wtime();
-    printf("Time: %lf ms\n", (end-start)*1000);
+    clock_t end = clock();
+    printf("Time: %ld ms\n", (end-start)*1000/CLOCKS_PER_SEC);
     fout = fopen("out.txt", "w");
     for (int k = 0; k < Size ; k++) {
         fprintf( fout, "%lf %lf\n", real_sum[k], img_sum[k]);
